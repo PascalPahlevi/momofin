@@ -16,6 +16,7 @@ import ppl.momofin.momofinbackend.request.AuthRequest;
 import ppl.momofin.momofinbackend.security.JwtUtil;
 
 import static ppl.momofin.momofinbackend.controller.DocumentVerificationController.getUsername;
+import jakarta.servlet.http.HttpServletRequest;
 
 @RestController
 @RequestMapping("/auth")
@@ -33,8 +34,9 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<Response> authenticateUser(@RequestBody AuthRequest authRequest) {
+    public ResponseEntity<Response> authenticateUser(@RequestBody AuthRequest authRequest, HttpServletRequest request) {
         String logName = "/auth/login";
+        String sourceUrl = request.getRequestURL().toString() ;
 
         try {
             User authenticatedUser = userService.authenticate(
@@ -44,17 +46,19 @@ public class AuthController {
             );
             String jwt = jwtUtil.generateToken(authenticatedUser);
 
-            loggingService.log("INFO",
-                    String.format("Successful login for user: %s from organization: %s",
-                            authRequest.getUsername(), authRequest.getOrganizationName()),
-                    "/auth/login");
+            loggingService.log(authenticatedUser.getUserId(), "INFO",
+                    "Successful login for user: " + authenticatedUser.getUsername() +
+                            " from organization: " + authRequest.getOrganizationName(),
+                    logName, sourceUrl);
 
             AuthResponseSuccess response = new AuthResponseSuccess(authenticatedUser, jwt);
 
             return ResponseEntity.ok(response);
         } catch (RuntimeException e) {
-            loggingService.log("ERROR", "Failed login attempt for user: " + authRequest.getUsername() +
-                    " from organization: " + authRequest.getOrganizationName(), logName);
+            loggingService.log(null, "ERROR",
+                    "Failed login attempt for user: " + authRequest.getUsername() +
+                            " from organization: " + authRequest.getOrganizationName(),
+                    logName, sourceUrl);
             ErrorResponse response = new ErrorResponse(e.getMessage());
 
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
@@ -62,7 +66,10 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<Response> registerUser(@RequestHeader("Authorization") String token, @RequestBody RegisterRequest registerRequest) {
+    public ResponseEntity<Response> registerUser(@RequestHeader("Authorization") String token, @RequestBody RegisterRequest registerRequest, HttpServletRequest request) {
+        String logName = "/auth/register";
+        String sourceUrl = request.getRequestURL().toString();
+
         String username = authenticateAndGetUsername(token);
         User user = userService.fetchUserByUsername(username);
         try {
@@ -74,11 +81,21 @@ public class AuthController {
                     registerRequest.getPassword(),
                     registerRequest.getPosition()
             );
+            loggingService.log(registeredUser.getUserId(), "INFO",
+                    "User: " + registeredUser.getUsername() +
+                            " with Name: " + registeredUser.getName() +
+                            " using Email: " + registeredUser.getEmail() +
+                            " with Position: " + registeredUser.getPosition(),
+                    logName, sourceUrl);
 
             RegisterResponseSuccess response = new RegisterResponseSuccess(registeredUser);
 
             return ResponseEntity.ok(response);
         } catch (RuntimeException e) {
+            loggingService.log(null, "ERROR",
+                    "Failed registration attempt for user: " + registerRequest.getUsername(),
+                    logName, sourceUrl);
+
             ErrorResponse response = new ErrorResponse(e.getMessage());
 
             return ResponseEntity.status(HttpStatus.CONFLICT).body(response);

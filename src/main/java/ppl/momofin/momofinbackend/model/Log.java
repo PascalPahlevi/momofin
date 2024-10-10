@@ -21,11 +21,16 @@ public class Log {
     private String message;
     private String logName;
 
-    public Log(LocalDateTime timestamp, String level, String message, String logName) {
+    private Long userId;
+    private String sourceUrl;
+
+    public Log(Long userId, LocalDateTime timestamp, String level, String message, String logName, String sourceUrl) {
+        this.userId = userId;
         this.timestamp = timestamp;
         this.level = level;
         this.message = message;
         this.logName = logName;
+        this.sourceUrl = sourceUrl;
     }
 
     public Log() {

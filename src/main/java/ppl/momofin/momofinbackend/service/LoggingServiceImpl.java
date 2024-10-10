@@ -18,8 +18,8 @@ public class LoggingServiceImpl implements LoggingService{
     }
 
     @Override
-    public void log(String level, String message, String logName) {
-        Log logEntry = new Log(LocalDateTime.now(), level, message, logName);
+    public void log(Long userId,String level, String message, String logName, String sourceUrl) {
+        Log logEntry = new Log(userId, LocalDateTime.now(), level, message, logName, sourceUrl);
         logRepository.save(logEntry);
     }
 }

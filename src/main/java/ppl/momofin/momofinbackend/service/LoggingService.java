@@ -1,5 +1,5 @@
 package ppl.momofin.momofinbackend.service;
 
 public interface LoggingService {
-    void log(String level, String message, String logName);
+    void log(Long userId, String level, String message, String logName, String sourceUrl);
 }
